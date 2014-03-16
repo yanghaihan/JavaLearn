@@ -1,0 +1,116 @@
+package com.xmltojson;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+import javax.swing.*;
+import javax.swing.filechooser.FileFilter;
+import java.awt.*;
+import net.sf.json.JSON;
+import net.sf.json.JSONObject;
+import net.sf.json.xml.XMLSerializer;
+import org.apache.commons.io.IOUtils;
+public class XMLToJSON extends JFrame implements ActionListener {
+     private JButton choose,convert;
+     private JPanel jp;
+     private JTextArea jta;
+     private JFileChooser jfc;
+     private String xpath=null;
+     private StringBuffer opath=new StringBuffer("");
+     public XMLToJSON(){
+    	 choose=new JButton("choose file");
+    	 convert=new JButton("convert");
+    	 choose.addActionListener(this);
+    	 choose.setActionCommand("choose");
+    	 convert.addActionListener(this);
+    	 convert.setActionCommand("convert");
+    	 jta=new JTextArea();
+    	 jta.setText("no file");
+    	 jta.setEnabled(false);
+    	 jp=new JPanel();
+         jp.add(choose);
+         jp.add(convert);
+         jp.add(jta);
+         this.add(jp);
+         this.setSize(400,100);
+         this.setLocation(200,200);
+         this.setVisible(true);
+         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+     }
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		if(e.getActionCommand().equals("choose")){
+			jfc=new JFileChooser("please choose the xml file");
+			jfc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+	        jfc.setFileHidingEnabled(true);  
+	        jfc.setAcceptAllFileFilterUsed(false);  
+	        jfc.addChoosableFileFilter(new MyFilter("xml"));
+	        int rv=jfc.showOpenDialog(null);
+	        if(rv==JFileChooser.APPROVE_OPTION){
+	        xpath=jfc.getSelectedFile().getAbsolutePath().toString();
+	        System.out.println(xpath);
+	        int length=xpath.lastIndexOf('.');
+	        opath.append(xpath,0,length);
+	        opath.append(".json");
+	        System.out.println(opath);
+	        jta.setText(xpath);
+	        }
+	        
+		}
+		else if(e.getActionCommand().equals("convert")){
+			if(xpath==null){
+			jta.setText("error,no file is selected");
+			}
+			else{
+				String xmlContext;
+		        try{
+		        	InputStream is=new FileInputStream(xpath);
+		        	xmlContext=IOUtils.toString(is);
+		        	XMLSerializer xmlSerializer=new XMLSerializer();
+		        	JSON json=xmlSerializer.read(xmlContext);
+		        	File fjson=new File(opath.toString());
+		        	if(fjson.exists()){
+		        		System.out.println("will cover the file!");
+		        	}
+		        	FileOutputStream fos=new FileOutputStream(fjson);
+		        	byte buffer[]=json.toString().getBytes();
+		        	fos.write(buffer);
+		        }catch(IOException el){
+		        	el.printStackTrace();
+		        }
+			}
+		}
+	}
+	public static void main(String args[]){
+		new XMLToJSON();
+	}
+}
+class MyFilter extends FileFilter{
+	private String ftype;
+	public MyFilter(String ftype){
+		this.ftype=ftype;
+	}
+	public boolean accept(File f){
+		if(f.isDirectory()){
+			return true;
+		}
+		String suffix=f.getName();
+		int index=suffix.lastIndexOf('.');
+		if(suffix.toLowerCase().substring(index+1).equals(this.ftype)&&index>0){
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
+	@Override
+	public String getDescription() {
+		// TODO Auto-generated method stub
+		return this.ftype.toUpperCase();
+	}
+}
